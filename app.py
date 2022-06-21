@@ -7,8 +7,8 @@ import numpy as np
 import correlation as corr
 from PIL import Image
 
-#image = Image.open('img.png')
-#st.image(image, use_column_width=True)
+image = Image.open('img.png')
+st.image(image, use_column_width=True)
 
 st.write("""
 # ★ Stock Price - Google Trends correlations 
