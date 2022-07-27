@@ -1,4 +1,3 @@
-from cv2 import line
 import yfinance as yf
 from pytrends.request import TrendReq
 import streamlit as st
