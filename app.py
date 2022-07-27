@@ -50,7 +50,10 @@ if polish_all:
 st.write("----------")
 st.write("**Correlations settings**")
 max_shift = int(st.text_input("Max trends day-shift allowed:", "20"))
-rtrends_numb = int(st.text_input("RTrends number:", "10"))
+
+show_STrend = st.checkbox("Show Random Walks", value=True)
+if show_STrend:
+    rtrends_numb = int(st.text_input("RTrends number:", "10"))
 
 
 if stock_df.empty:
@@ -231,31 +234,6 @@ else:
             st.line_chart(pd.DataFrame.join(strend_pday, gtrend_pday))
 
 
-
-    ####### RANDOM WALK
-    st.header("★ Random Walk")
-    rndWalk = strend_pday.copy()[[]] #copy stock_df and erase all columns
-    max_length = int(st.text_input("max consecutive steps:", "1"))
-    st.button('refresh')
-    rndWalk["random walk"] = corr.brownian(init_stock_value, len(strend_pday.Open), max_length=max_length)
-    min_open_rnd = min(rndWalk["random walk"])
-    max_open_rnd = max(rndWalk["random walk"])
-    if normalize:
-            rndWalk["random walk"] = (rndWalk["random walk"]-min_open_rnd)/(max_open_rnd-min_open_rnd)  
-
-    if polish_all:
-        rndWalk["Unpolished RND Data"] = rndWalk["random walk"]
-        rndWalk["random walk"] = corr.polish(rndWalk["random walk"], polish_n)
-
-    st.line_chart(rndWalk)
-
-    show_plot = st.checkbox("Show both Random Walk and Stock trends", value=True)
-    if show_plot:
-        st.subheader("Random Walk vs Stock Open prices")
-        st.line_chart(pd.DataFrame.join(strend_pday, rndWalk))
-
-
-
     
     ####### Correlation G-S Trends
     st.header("★ G-S Trends Correlation")
@@ -312,70 +290,96 @@ else:
     # plt.plot(lk_g_vec)
 
 
-    ####### Correlation S-R Trends
-    st.header("★ S-R Trends Correlation")
-    corr_r = []
-    lk_r = []
-    mcorr_r = []
-    stdv = 0
-    st.write("--------------")
-    st.write(f'**Shift di x giorni:$~~~~~~~~~~$correlation , likelihood | magnitude-correlation**')
-    for i in range (max_shift):
-        r, lk, inc_stdv = corr.correlation(strend_pday.Open, rndWalk["random walk"], i, return_std=True)
-        stdv += inc_stdv
-        corr_r.append(r)
-        lk_r.append(lk)
-        mang_cor = corr.correlation_Magnitude(strend_pday.Open, rndWalk["random walk"], i)
-        mcorr_r.append(mang_cor)
-        st.write(f'Shift di {i} giorni:$~~~~~~~~~~${np.round(r,3)} ,   {np.round(lk,3)} | {np.round(mang_cor,3)}')
 
-        
-    maxmin_stat_r = corr.maxmin_shift(strend_pday.Open, rndWalk["random walk"], max_shift=max_shift, corr_type="classic")
-    maxmin_stat_mag_r = corr.maxmin_shift(strend_pday.Open, rndWalk["random walk"], max_shift=max_shift, corr_type="magnitude")
-    st.write()
-    st.write(f"""
-    --------------
 
-    **Max correlation**: {np.round(maxmin_stat_r[1],3)} [{maxmin_stat_r[0]} days shift]
-
-    **Min correlation**: {np.round(maxmin_stat_r[3],3)} [{maxmin_stat_r[2]} days shift]
-    """)
-
-    st.write(f"""
-    --------------
-
-    **Max magnitude-correlation**: {np.round(maxmin_stat_mag_r[1],3)} [{maxmin_stat_mag_r[0]} days shift]
-
-    **Min magnitude-correlation**: {np.round(maxmin_stat_mag_r[3],3)} [{maxmin_stat_mag_r[2]} days shift]
-
-    --------------
-    """)
-
-    ####### Log
-    st.header("★ Correlations Log")
-
-    for i in range(rtrends_numb-1):
-        #prv_rand = random_walk
-        random_walk = corr.brownian(init_stock_value, len(strend_pday.Open), 0.5, max_length=max_length)
-        if normalize:     
-            min_rnd = np.min(random_walk)
-            max_rnd = np.max(random_walk)
-            random_walk = (random_walk -min_rnd)/(max_rnd-min_rnd)
+    if show_STrend:
+        ####### RANDOM WALK
+        st.header("★ Random Walk")
+        rndWalk = strend_pday.copy()[[]] #copy stock_df and erase all columns
+        max_length = int(st.text_input("max consecutive steps:", "1"))
+        st.button('refresh')
+        rndWalk["random walk"] = corr.brownian(init_stock_value, len(strend_pday.Open), max_length=max_length)
+        min_open_rnd = min(rndWalk["random walk"])
+        max_open_rnd = max(rndWalk["random walk"])
+        if normalize:
+                rndWalk["random walk"] = (rndWalk["random walk"]-min_open_rnd)/(max_open_rnd-min_open_rnd)  
 
         if polish_all:
-            random_walk = corr.polish(random_walk, polish_n)
+            rndWalk["Unpolished RND Data"] = rndWalk["random walk"]
+            rndWalk["random walk"] = corr.polish(rndWalk["random walk"], polish_n)
 
+        st.line_chart(rndWalk)
+
+        show_plot = st.checkbox("Show both Random Walk and Stock trends", value=True)
+        if show_plot:
+            st.subheader("Random Walk vs Stock Open prices")
+            st.line_chart(pd.DataFrame.join(strend_pday, rndWalk))
+
+
+        ####### Correlation S-R Trends
+        st.header("★ S-R Trends Correlation")
+        corr_r = []
+        lk_r = []
+        mcorr_r = []
+        stdv = 0
+        st.write("--------------")
+        st.write(f'**Shift di x giorni:$~~~~~~~~~~$correlation , likelihood | magnitude-correlation**')
         for i in range (max_shift):
-            #r, lk = correlation_noMagnitude(prv_rand, random_walk, i) 
-            r, lk, inc_stdv = corr.correlation(strend_pday.Open, random_walk, i, return_std=True)
-            mang_cor = corr.correlation_Magnitude(strend_pday.Open, random_walk, i)
-            mcorr_r.append(mang_cor)
+            r, lk, inc_stdv = corr.correlation(strend_pday.Open, rndWalk["random walk"], i, return_std=True)
             stdv += inc_stdv
             corr_r.append(r)
             lk_r.append(lk)
+            mang_cor = corr.correlation_Magnitude(strend_pday.Open, rndWalk["random walk"], i)
+            mcorr_r.append(mang_cor)
+            st.write(f'Shift di {i} giorni:$~~~~~~~~~~${np.round(r,3)} ,   {np.round(lk,3)} | {np.round(mang_cor,3)}')
 
-    rtrends_numb = len(lk_r)
-    stdv = stdv/rtrends_numb
+            
+        maxmin_stat_r = corr.maxmin_shift(strend_pday.Open, rndWalk["random walk"], max_shift=max_shift, corr_type="classic")
+        maxmin_stat_mag_r = corr.maxmin_shift(strend_pday.Open, rndWalk["random walk"], max_shift=max_shift, corr_type="magnitude")
+        st.write()
+        st.write(f"""
+        --------------
+
+        **Max correlation**: {np.round(maxmin_stat_r[1],3)} [{maxmin_stat_r[0]} days shift]
+
+        **Min correlation**: {np.round(maxmin_stat_r[3],3)} [{maxmin_stat_r[2]} days shift]
+        """)
+
+        st.write(f"""
+        --------------
+
+        **Max magnitude-correlation**: {np.round(maxmin_stat_mag_r[1],3)} [{maxmin_stat_mag_r[0]} days shift]
+
+        **Min magnitude-correlation**: {np.round(maxmin_stat_mag_r[3],3)} [{maxmin_stat_mag_r[2]} days shift]
+
+        --------------
+        """)
+
+        ####### Log
+        st.header("★ Correlations Log")
+
+        for i in range(rtrends_numb-1):
+            #prv_rand = random_walk
+            random_walk = corr.brownian(init_stock_value, len(strend_pday.Open), 0.5, max_length=max_length)
+            if normalize:     
+                min_rnd = np.min(random_walk)
+                max_rnd = np.max(random_walk)
+                random_walk = (random_walk -min_rnd)/(max_rnd-min_rnd)
+
+            if polish_all:
+                random_walk = corr.polish(random_walk, polish_n)
+
+            for i in range (max_shift):
+                #r, lk = correlation_noMagnitude(prv_rand, random_walk, i) 
+                r, lk, inc_stdv = corr.correlation(strend_pday.Open, random_walk, i, return_std=True)
+                mang_cor = corr.correlation_Magnitude(strend_pday.Open, random_walk, i)
+                mcorr_r.append(mang_cor)
+                stdv += inc_stdv
+                corr_r.append(r)
+                lk_r.append(lk)
+
+        rtrends_numb = len(lk_r)
+        stdv = stdv/rtrends_numb
 
 
 
@@ -389,24 +393,26 @@ else:
     st.write(f"Min correlation with GTrend:$~~~~~~~~~~${np.round(maxmin_stat_g[3],3)}     [shift: {maxmin_stat_g[2]}]")
     st.write("""--------------""")
 
-    st.write(f"""Mean correlation with RndWlk:$~~~~~~~~~~${np.round(np.mean(corr_r),3)}""") 
-    st.write(f"""Mean likely with RndWlk:$~~~~~~~~~~~~~~~~${np.round(np.mean(lk_r),3)}""")
-    st.write(f"""Mean magn correl with RTrend:$~~~~~~~~~~${np.round(np.mean(mcorr_r),3)}""")
-    st.write(f"Max correl with first RTrend:$~~~~~~~~~~${np.round(maxmin_stat_r[1],3)}     [shift: {maxmin_stat_r[0]}]")
-    st.write(f"Min correl with first RTrend:$~~~~~~~~~~${np.round(maxmin_stat_r[3],3)}     [shift: {maxmin_stat_r[2]}]\n")
-    st.write("""--------------""")
+    if show_STrend:
+
+        st.write(f"""Mean correlation with RndWlk:$~~~~~~~~~~${np.round(np.mean(corr_r),3)}""") 
+        st.write(f"""Mean likely with RndWlk:$~~~~~~~~~~~~~~~~${np.round(np.mean(lk_r),3)}""")
+        st.write(f"""Mean magn correl with RTrend:$~~~~~~~~~~${np.round(np.mean(mcorr_r),3)}""")
+        st.write(f"Max correl with first RTrend:$~~~~~~~~~~${np.round(maxmin_stat_r[1],3)}     [shift: {maxmin_stat_r[0]}]")
+        st.write(f"Min correl with first RTrend:$~~~~~~~~~~${np.round(maxmin_stat_r[3],3)}     [shift: {maxmin_stat_r[2]}]\n")
+        st.write("""--------------""")
 
 
-    st.subheader("Confidence from likelihood calculator")
-    lk_target = float(st.text_input("reference likelihood:", "1.645"))
-    # p =  0.05, 0.025,  0.01, 0.005, 0.001, 0.0005 for
-    # z = 1.645, 1.960, 2.327, 2.576, 3.091,  3.291
-    st.write(f"Total Random trends:$~~~~~~~~~~~~~~~~~~~~${rtrends_numb}")
-    st.write(f"Standard Deviation RTrends:$~~~~~~~~~~${np.round(stdv,5)}")
-    st.write(f"Expected probability for {lk_target}:$~~~~~~~${np.round(corr.conf_int_prob(lk_target),4)}")
-    lkstdv = np.round(lk_target*stdv,4)
-    st.write(f"Likelihood*stdv:$~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~${lkstdv}")
-    st.write(f"Prob(correlation > 0.5 + {lkstdv}):$~~~~~~~~~~~${np.sum(np.array(lk_r)>lk_target)/rtrends_numb}")
-    st.write(f"Prob(correlation < 0.5 - {lkstdv}):$~~~~~~~~~~~${np.sum(np.array(lk_r)<-lk_target)/rtrends_numb}")
-    st.write(f"Prob(|correlation-0.5| > {lkstdv}):$~~~~~~~~~~~${(np.sum(np.array(lk_r)>lk_target) + np.sum(np.array(lk_r)<-lk_target))/rtrends_numb}")
-    
+        st.subheader("Confidence from likelihood calculator")
+        lk_target = float(st.text_input("reference likelihood:", "1.645"))
+        # p =  0.05, 0.025,  0.01, 0.005, 0.001, 0.0005 for
+        # z = 1.645, 1.960, 2.327, 2.576, 3.091,  3.291
+        st.write(f"Total Random trends:$~~~~~~~~~~~~~~~~~~~~${rtrends_numb}")
+        st.write(f"Standard Deviation RTrends:$~~~~~~~~~~${np.round(stdv,5)}")
+        st.write(f"Expected probability for {lk_target}:$~~~~~~~${np.round(corr.conf_int_prob(lk_target),4)}")
+        lkstdv = np.round(lk_target*stdv,4)
+        st.write(f"Likelihood*stdv:$~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~${lkstdv}")
+        st.write(f"Prob(correlation > 0.5 + {lkstdv}):$~~~~~~~~~~~${np.sum(np.array(lk_r)>lk_target)/rtrends_numb}")
+        st.write(f"Prob(correlation < 0.5 - {lkstdv}):$~~~~~~~~~~~${np.sum(np.array(lk_r)<-lk_target)/rtrends_numb}")
+        st.write(f"Prob(|correlation-0.5| > {lkstdv}):$~~~~~~~~~~~${(np.sum(np.array(lk_r)>lk_target) + np.sum(np.array(lk_r)<-lk_target))/rtrends_numb}")
+        
