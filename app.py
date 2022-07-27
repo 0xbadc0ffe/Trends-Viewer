@@ -286,21 +286,21 @@ else:
     st.subheader(f"Max Shift plot [{maxmin_stat_mag_g[0]}]")
     if polish_all:
         if st.checkbox("Show unpolished", value=False, key="show unpolished data for max shift plot"):
-            st.line_chart(pd.DataFrame.join(strend_pday.shift(maxmin_stat_mag_g[0], axis=0), gtrend_pday[maxmin_stat_mag_g[0]:]))
+            st.line_chart(pd.DataFrame.join(strend_pday.shift(maxmin_stat_mag_g[0], axis=0), gtrend_pday[maxmin_stat_mag_g[0]:])[maxmin_stat_mag_g[0]:])
         else:
-            st.line_chart(pd.DataFrame.join(pd.DataFrame(strend_pday["Open"]).shift(maxmin_stat_mag_g[0], axis=0), gtrend_pday[trend_str][maxmin_stat_mag_g[0]:]))
+            st.line_chart(pd.DataFrame.join(pd.DataFrame(strend_pday["Open"]).shift(maxmin_stat_mag_g[0], axis=0), gtrend_pday[trend_str][maxmin_stat_mag_g[0]:])[maxmin_stat_mag_g[0]:])
     else:
-        st.line_chart(pd.DataFrame.join(strend_pday.shift(maxmin_stat_mag_g[0], axis=0), gtrend_pday[maxmin_stat_mag_g[0]:]))
+        st.line_chart(pd.DataFrame.join(strend_pday.shift(maxmin_stat_mag_g[0], axis=0), gtrend_pday[maxmin_stat_mag_g[0]:])[maxmin_stat_mag_g[0]:])
     
 
     st.subheader(f"Min Shift plot [{maxmin_stat_mag_g[2]}]")
     if polish_all:
         if st.checkbox("Show unpolished", value=False, key="show unpolished data for min shift plot"):
-            st.line_chart(pd.DataFrame.join(strend_pday.shift(maxmin_stat_mag_g[2], axis=0), gtrend_pday[maxmin_stat_mag_g[2]:]))
+            st.line_chart(pd.DataFrame.join(strend_pday.shift(maxmin_stat_mag_g[2], axis=0), gtrend_pday[maxmin_stat_mag_g[2]:])[maxmin_stat_mag_g[2]:])
         else:
-            st.line_chart(pd.DataFrame.join(pd.DataFrame(strend_pday["Open"]).shift(maxmin_stat_mag_g[2], axis=0), gtrend_pday[trend_str][maxmin_stat_mag_g[2]:]))
+            st.line_chart(pd.DataFrame.join(pd.DataFrame(strend_pday["Open"]).shift(maxmin_stat_mag_g[2], axis=0), gtrend_pday[trend_str][maxmin_stat_mag_g[2]:])[maxmin_stat_mag_g[2]:])
     else:
-        st.line_chart(pd.DataFrame.join(strend_pday.shift(maxmin_stat_mag_g[2], axis=0), gtrend_pday[maxmin_stat_mag_g[2]:]))
+        st.line_chart(pd.DataFrame.join(strend_pday.shift(maxmin_stat_mag_g[2], axis=0), gtrend_pday[maxmin_stat_mag_g[2]:])[maxmin_stat_mag_g[2]:])
     
 
 
