@@ -1,3 +1,4 @@
+from cv2 import line
 import yfinance as yf
 from pytrends.request import TrendReq
 import streamlit as st
@@ -24,10 +25,10 @@ tickerSymbol_default = 'AAPL' #'GOOGL'
 tickerSymbol = st.text_input("Ticker Symbol", tickerSymbol_default)
 #tickerSymbol = tickerSymbol.strip()
 
-start_date = '2021-04-25' #'2010-5-31'
+start_date = '2021-03-31' #'2010-5-31'
 start_date = st.text_input("Starting date  [yyyy-mm-dd]", start_date)
 
-end_date = '2022-04-19' #'2020-5-31'
+end_date = '2022-04-01' #'2020-5-31'
 end_date = st.text_input("Ending date  [yyyy-mm-dd]", end_date)
 
 period = '1d'
@@ -169,6 +170,8 @@ else:
     **GTrend Max**: {max_gtrend}
     """)
 
+
+
     st.subheader("Worked Google Trend")
     if normalize:   
         gtrend_df[trend_str] = (gtrend_df[trend_str]-min_gtrend)/(max_gtrend-min_gtrend)
@@ -179,13 +182,18 @@ else:
             columns=[trend_str]
         )
     else:
-        gtrend_pday = []
-        rep = 7  #ogni dato del file csv trend viene ripetuto rep volte
-        for p in gtrend_df[trend_str]:
-            for i in range(rep):
-                gtrend_pday.append(p)
+        # gtrend_pday = []
+        # rep = 7  #ogni dato del file csv trend viene ripetuto rep volte
+        # for p in gtrend_df[trend_str]:
+        #     for i in range(rep):
+        #         gtrend_pday.append(p)
 
-        tmp = [i for i in range(dates[0], len(gtrend_pday)+dates[0])]
+        interpol_type = st.checkbox("linear interpolation", value=False)
+        dates_g = corr.compute_dates_vec(gtrend_df.index)
+        gtrend_pday = corr.fill_trend(dates_g, gtrend_df[trend_str], line=interpol_type)
+
+
+        tmp = [i for i in range(dates_g[0], len(gtrend_pday) + dates_g[0])]
         dates_fill = []
         for d in tmp: dates_fill.append(corr.to_date(start_date, d))
         
@@ -194,20 +202,35 @@ else:
             columns=[trend_str]
         )
         gtrend_pday.index = dates_fill
+    
+    flat_gtrend = st.checkbox("Flat GTrend")
+    if flat_gtrend:       
+        gtrend_pday[trend_str] = corr.flatter(gtrend_pday[trend_str])
+
 
     if polish_all:
         gtrend_pday["Unpolished GT Data"] = gtrend_pday[trend_str]
         gtrend_pday[trend_str] = corr.polish(gtrend_pday[trend_str], polish_n)
 
 
+    # Alligning
+    i0 = pd.Index.intersection(strend_pday.index,gtrend_pday.index)[0]
+    strend_pday = strend_pday[i0:]
+    gtrend_pday = gtrend_pday[i0:]
+
+
     st.line_chart(gtrend_pday)
     show_plot = st.checkbox("Show both Google and Stock trends", value=True)
     if show_plot:
         st.subheader("Google Trend vs Stock Open prices")
-        if st.checkbox("Show unpolished", value=True):
-            st.line_chart(pd.concat([strend_pday.Open, strend_pday["Unpolished ST Data"], gtrend_pday[trend_str], gtrend_pday["Unpolished GT Data"]], axis=1))
+        if polish_all:
+            if st.checkbox("Show unpolished", value=True):
+                st.line_chart(pd.DataFrame.join(strend_pday, gtrend_pday))
+            else:
+                st.line_chart(pd.DataFrame.join(pd.DataFrame(gtrend_pday[trend_str]),strend_pday["Open"]))
         else:
-            st.line_chart(pd.concat([strend_pday.Open, gtrend_pday[trend_str]], axis=1))
+            st.line_chart(pd.DataFrame.join(strend_pday, gtrend_pday))
+
 
 
     ####### RANDOM WALK
@@ -230,7 +253,7 @@ else:
     show_plot = st.checkbox("Show both Random Walk and Stock trends", value=True)
     if show_plot:
         st.subheader("Random Walk vs Stock Open prices")
-        st.line_chart(pd.concat([strend_pday.Open, strend_pday["Unpolished ST Data"], rndWalk["random walk"], rndWalk["Unpolished RND Data"]], axis=1))
+        st.line_chart(pd.DataFrame.join(strend_pday, rndWalk))
 
 
 

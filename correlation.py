@@ -43,7 +43,7 @@ def fill_trend(x_axis, trend, line=True):
         else:
             if not line: 
                 if i+1 in x_axis:
-                    out.append((prev+trend[cnt+1])/2)
+                    out.append((prev+trend[cnt])/2)
                 else:
                     out.append(prev)
             else:
@@ -89,7 +89,7 @@ def flatter(trend):
     a = np.arange(len(trend))
     b = a.reshape(len(trend),1)    
     
-    alpha = np.linalg.lstsq(b, trend, rcond=None)[0]
+    alpha = np.linalg.lstsq(b, trend-trend[0], rcond=None)[0]
     
     for i in range(len(trend)):
         trend[i] = trend[i] - alpha*i    
@@ -270,6 +270,7 @@ def compute_dates_vec(trend_dates):
     dates = []
     sw = 0
     prev = -1
+    lprev = 0
     for d in trend_dates:
         if type(d) == str:
             d = datetime.strptime(d,'%Y-%m-%d').timetuple().tm_yday
@@ -284,9 +285,10 @@ def compute_dates_vec(trend_dates):
             # d = str(d).split()[0]
             # d = datetime.strptime(d,'%Y-%m-%d').timetuple().tm_yday
         if prev > d:
-            sw += 365 + l
+            sw += 365 + lprev
         # elif prev == 0:
         #     sw -= d-1
+        lprev = l
         prev = d
         dates.append(d+sw) 
     return dates
