@@ -1,5 +1,3 @@
-from fileinput import filename
-from logging import raiseExceptions
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -17,12 +15,12 @@ def to_date(start_date, day_of_year):
             d = pd.to_datetime(str(init_d + cnt) + str(day_of_year - p), format='%Y%j')
             break
         except:
-            cnt += 1
             # leap years
             if (init_d+cnt)%4 == 0:
                 p += 366
             else:
-                p += 365 
+                p += 365
+            cnt += 1
     return d
 
 
@@ -43,6 +41,7 @@ def fill_trend(x_axis, trend, line=True):
         else:
             if not line: 
                 if i+1 in x_axis:
+                    #out.append(prev) #trend[cnt] #fully constant
                     out.append((prev+trend[cnt])/2)
                 else:
                     out.append(prev)
@@ -101,21 +100,16 @@ def flatter(trend):
 def polish(trend, n):
 
     for k in range(n):
-        i = 0
         for i in range(len(trend)):
-            
             
             if i==0:
                 trend[i] = 0.75*trend[i] + 0.25*trend[i+1]
-                #print ('i==0')
             else: 
                 if i==(len(trend)-1): 
-                    trend[i] = 0.25*trend[i-1] + 0.5*trend[i]
-                #    print('i==365')
+                    trend[i] = 0.25*trend[i-1] + 0.75*trend[i] #0.5
                 else:
                     trend[i] = 0.25*trend[i-1] + 0.5*trend[i] + 0.25*trend[i+1]
-        i=0
-    return(trend)
+    return trend
             
 
 def correlation (strend, gtrend, shift, return_std=False):
@@ -266,11 +260,13 @@ def correlation_Magnitude (strend, gtrend, shift):
     return count/(min(len(series_strend), len(series_gtrend)) - shift)
 
 
-def compute_dates_vec(trend_dates):
+def compute_dates_vec_old(trend_dates):
     dates = []
     sw = 0
     prev = -1
     lprev = 0
+    d0 = trend_dates[0]
+    d0oy = d0.dayofyear
     for d in trend_dates:
         if type(d) == str:
             d = datetime.strptime(d,'%Y-%m-%d').timetuple().tm_yday
@@ -281,17 +277,36 @@ def compute_dates_vec(trend_dates):
                 l = 0 
         else:
             l = int(d.is_leap_year)
-            d = d.dayofyear
+            doy = d.dayofyear
+            # d = d.dayofyear
             # d = str(d).split()[0]
             # d = datetime.strptime(d,'%Y-%m-%d').timetuple().tm_yday
-        if prev > d:
+        if prev > doy: #prev > d.year:
             sw += 365 + lprev
+            #sw += 365*(d.year-prev) + lprev
         # elif prev == 0:
-        #     sw -= d-1
+        #     sw -= doy-1
         lprev = l
-        prev = d
-        dates.append(d+sw) 
+        prev = doy #d.year
+        dates.append(doy+sw)
+
     return dates
+
+
+def compute_dates_vec(trend_dates):
+    dates = []
+    if type(trend_dates[0]) == str:
+        d0 = datetime.strptime(trend_dates[0],'%Y-%m-%d').timetuple().tm_yday
+    else:
+        d0 = trend_dates[0]
+    for d in trend_dates:
+        if type(d) == str:
+            d = datetime.strptime(d,'%Y-%m-%d').timetuple().tm_yday
+        doy = d.dayofyear     
+        dates.append(d0.dayofyear + (d-d0).days)   
+
+    return dates
+
 
 def shifted_coorelation(trend, predictor_trend, max_shift=20, return_std=False, corr_type="classic"):
     dim = min(max_shift, len(trend))
@@ -319,7 +334,7 @@ def shifted_coorelation(trend, predictor_trend, max_shift=20, return_std=False, 
             corr_vec.append(corr)
         return corr_vec, None
     else:
-        raiseExceptions("Unknown correlation fucntion")
+        raise Exception("Unknown correlation fucntion")
 
 
 def maxmin_shift(trend, predictor_trend, max_shift=20, return_lk=False, corr_type="classic"):
